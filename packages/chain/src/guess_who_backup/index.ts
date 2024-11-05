@@ -1,0 +1,1 @@
+export { GuessWhoGame } from './GuessWho';

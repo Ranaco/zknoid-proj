@@ -1,0 +1,6 @@
+  
+include:
+- ./docker/persistence/docker-compose.yml
+- ./docker/sequencer/docker-compose.yml
+- ./docker/proxy/docker-compose.yml
+- ./docker/web/docker-compose.yml
