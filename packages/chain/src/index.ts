@@ -17,7 +17,7 @@ export * from './environments/client.config';
 export { Balances } from './framework';
 
 export * from './guess_who/index.js';
-export * from './connect4/index.js';
+export * from './custom_game/index.js';
 
 export { GuessGame } from './number_guessing';
 

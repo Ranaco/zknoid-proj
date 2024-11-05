@@ -13,18 +13,18 @@ import { MatchMaker } from '../engine/MatchMaker';
 import { Lobby } from '../engine/LobbyManager';
 import { UInt64 as ProtoUInt64 } from '@proto-kit/library';
 
-const CONNECT4_ROWS = 6;
-const CONNECT4_COLS = 7;
+const GAME_ROWS = 6;
+const GAME_COLS = 7;
 const CELLS_TO_WIN = 4;
 
-export class Connect4Board extends Struct({
-  value: Provable.Array(Provable.Array(UInt32, CONNECT4_COLS), CONNECT4_ROWS),
+export class CustomGameBoard extends Struct({
+  value: Provable.Array(Provable.Array(UInt32, GAME_COLS), GAME_ROWS),
 }) {
-  static empty(): Connect4Board {
-    const emptyGrid = Array.from({ length: CONNECT4_ROWS }, () =>
-      Array(CONNECT4_COLS).fill(UInt32.zero),
+  static empty(): CustomGameBoard {
+    const emptyGrid = Array.from({ length: GAME_ROWS }, () =>
+      Array(GAME_COLS).fill(UInt32.zero),
     );
-    return new Connect4Board({ value: emptyGrid });
+    return new CustomGameBoard({ value: emptyGrid });
   }
 
   /**
@@ -34,13 +34,13 @@ export class Connect4Board extends Struct({
    * @returns The row index where the disc landed.
    */
   dropDisc(currentPlayerId: UInt32, col: UInt32): UInt32 {
-    assert(col.lessThan(UInt32.from(CONNECT4_COLS)), 'Invalid column index');
+    assert(col.lessThan(UInt32.from(GAME_COLS)), 'Invalid column index');
 
     let rowIndex = UInt32.zero;
     let placed = Bool(false);
 
-    for (let i = 0; i < CONNECT4_ROWS; i++) {
-      const row = UInt32.from(CONNECT4_ROWS - 1 - i);
+    for (let i = 0; i < GAME_ROWS; i++) {
+      const row = UInt32.from(GAME_ROWS - 1 - i);
 
       const cellValue = this.getCellValue(row, col);
 
@@ -66,8 +66,8 @@ export class Connect4Board extends Struct({
    */
   getCellValue(row: UInt32, col: UInt32): UInt32 {
     let cellValue = UInt32.zero;
-    for (let r = 0; r < CONNECT4_ROWS; r++) {
-      for (let c = 0; c < CONNECT4_COLS; c++) {
+    for (let r = 0; r < GAME_ROWS; r++) {
+      for (let c = 0; c < GAME_COLS; c++) {
         const match = row
           .equals(UInt32.from(r))
           .and(col.equals(UInt32.from(c)));
@@ -81,8 +81,8 @@ export class Connect4Board extends Struct({
    * Sets the value of the cell at the given position.
    */
   setCellValue(row: UInt32, col: UInt32, value: UInt32): void {
-    for (let r = 0; r < CONNECT4_ROWS; r++) {
-      for (let c = 0; c < CONNECT4_COLS; c++) {
+    for (let r = 0; r < GAME_ROWS; r++) {
+      for (let c = 0; c < GAME_COLS; c++) {
         const match = row
           .equals(UInt32.from(r))
           .and(col.equals(UInt32.from(c)));
@@ -96,7 +96,7 @@ export class Connect4Board extends Struct({
    */
   isFull(): Bool {
     let full = Bool(true);
-    for (let c = 0; c < CONNECT4_COLS; c++) {
+    for (let c = 0; c < GAME_COLS; c++) {
       const cellValue = this.value[0][c];
       full = full.and(!cellValue.equals(UInt32.zero));
     }
@@ -112,13 +112,13 @@ export class GameInfo extends Struct({
   player2: PublicKey,
   currentMoveUser: PublicKey,
   lastMoveBlockHeight: UInt64,
-  board: Connect4Board,
+  board: CustomGameBoard,
   winner: PublicKey,
   gameEnded: UInt32,
 }) {}
 
 @runtimeModule()
-export class Connect4Game extends MatchMaker {
+export class CustomGame extends MatchMaker {
   @state() public games = StateMap.from<UInt64, GameInfo>(UInt64, GameInfo);
 
   public override async initGame(
@@ -134,7 +134,7 @@ export class Connect4Game extends MatchMaker {
         player2: lobby.players[1],
         currentMoveUser: lobby.players[0],
         lastMoveBlockHeight: this.network.block.height,
-        board: Connect4Board.empty(),
+        board: CustomGameBoard.empty(),
         winner: PublicKey.empty(),
         gameEnded: UInt32.zero,
       }),
@@ -233,7 +233,7 @@ export class Connect4Game extends MatchMaker {
    * @param lastCol The column index where the disc was placed.
    */
   checkWin(
-    board: Connect4Board,
+    board: CustomGameBoard,
     currentPlayerId: UInt32,
     lastRow: UInt32,
     lastCol: UInt32,
@@ -244,7 +244,7 @@ export class Connect4Game extends MatchMaker {
       { dx: UInt32.zero, dy: UInt32.one }, // Vertical
       { dx: UInt32.one, dy: UInt32.zero }, // Horizontal
       { dx: UInt32.one, dy: UInt32.one }, // Diagonal /
-      { dx: UInt32.one, dy: UInt32.from(CONNECT4_ROWS - 1) }, // Diagonal \
+      { dx: UInt32.one, dy: UInt32.from(GAME_ROWS - 1) }, // Diagonal \
     ];
 
     for (let dirIndex = 0; dirIndex < directions.length; dirIndex++) {
@@ -258,8 +258,8 @@ export class Connect4Game extends MatchMaker {
         const col = UInt32.from(lastCol).add(dir.dx.mul(stepUInt));
 
         const inBounds = row
-          .lessThan(UInt32.from(CONNECT4_ROWS))
-          .and(UInt32.from(col).lessThan(UInt32.from(CONNECT4_COLS)));
+          .lessThan(UInt32.from(GAME_ROWS))
+          .and(UInt32.from(col).lessThan(UInt32.from(GAME_COLS)));
 
         const cellValue = this.getCellValue(board, row, col);
         const samePlayer = cellValue.equals(currentPlayerId);
@@ -288,8 +288,8 @@ export class Connect4Game extends MatchMaker {
 
         const inBounds = rowValid
           .and(colValid)
-          .and(row.lessThan(UInt32.from(CONNECT4_ROWS)))
-          .and(col.lessThan(UInt32.from(CONNECT4_COLS)));
+          .and(row.lessThan(UInt32.from(GAME_ROWS)))
+          .and(col.lessThan(UInt32.from(GAME_COLS)));
 
         const cellValue = this.getCellValue(board, row, col);
         const samePlayer = cellValue.equals(currentPlayerId);
@@ -308,10 +308,10 @@ export class Connect4Game extends MatchMaker {
   /**
    * Retrieves the value of the cell at the given position.
    */
-  getCellValue(board: Connect4Board, row: UInt32, col: UInt32): UInt32 {
+  getCellValue(board: CustomGameBoard, row: UInt32, col: UInt32): UInt32 {
     let cellValue = UInt32.zero;
-    for (let r = 0; r < CONNECT4_ROWS; r++) {
-      for (let c = 0; c < CONNECT4_COLS; c++) {
+    for (let r = 0; r < GAME_ROWS; r++) {
+      for (let c = 0; c < GAME_COLS; c++) {
         const match = row
           .equals(UInt32.from(r))
           .and(UInt32.from(col).equals(UInt32.from(c)));

@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { useNetworkStore } from '@/lib/stores/network';
 import {
-  useConnect4MatchQueueStore,
-  useObserveConnect4MatchQueue,
+  useCustomGameMatchQueueStore,
+  useObserveCustomGameMatchQueue,
 } from './stores/matchQueue';
 import RandzuCoverSVG from '../randzu/assets/game-cover.png';
 import RandzuCoverMobileSVG from '../randzu/assets/game-cover-mobile.svg';
@@ -11,7 +11,7 @@ import { useProtokitChainStore } from '@/lib/stores/protokitChain';
 import { Bool, CircuitString, UInt64 } from 'o1js';
 import { ClientAppChain } from 'zknoid-chain-dev';
 import { useGuessWhoMatchQueueStore } from '../guess_who/stores/matchQueue';
-import { connect4Config } from './config';
+import { customGameConfig } from './config';
 import {
   useLobbiesStore,
   useObserveLobbiesStore,
@@ -42,7 +42,7 @@ const competition = {
   prizeFund: 0n,
 };
 
-const Connect4: React.FC = () => {
+const CustomGame: React.FC = () => {
   const [gameState, setGameState] = React.useState<GameState>(
     GameState.NotStarted
   );
@@ -62,22 +62,22 @@ const Connect4: React.FC = () => {
   const toasterStore = useToasterStore();
   const rateGameStore = useRateGameStore();
   const protokitChain = useProtokitChainStore();
-  useObserveConnect4MatchQueue();
-  const matchQueue = useConnect4MatchQueueStore();
+  useObserveCustomGameMatchQueue();
+  const matchQueue = useCustomGameMatchQueueStore();
   const progress = api.progress.setSolvedQuests.useMutation();
   const getRatingQuery = api.ratings.getGameRating.useQuery({
     gameId: 'connect-4',
   });
 
   const client_ = client as ClientAppChain<
-    typeof connect4Config.runtimeModules,
+    typeof customGameConfig.runtimeModules,
     any,
     any,
     any
   >;
 
   const query = networkStore.protokitClientStarted
-    ? client_.query.runtime.Connect4Game
+    ? client_.query.runtime.CustomGame
     : undefined;
 
   useObserveLobbiesStore(query);
@@ -124,12 +124,12 @@ const Connect4: React.FC = () => {
   const makeMove = async () => {
     console.log('making move', matchQueue.gameInfo);
 
-    const connect4Game = client.runtime.resolve('Connect4Game');
+    const CustomGameGame = client.runtime.resolve('Connect4Game');
 
     const tx = await client.transaction(
       sessionPrivateKey.toPublicKey(),
       async () => {
-        connect4Game.makeMove(UInt64.from(matchQueue.gameInfo!.gameId), 2);
+        CustomGameGame.makeMove(UInt64.from(matchQueue.gameInfo!.gameId), 2);
       }
     );
 
@@ -143,7 +143,7 @@ const Connect4: React.FC = () => {
 
   return (
     <GamePage
-      gameConfig={connect4Config}
+      gameConfig={customGameConfig}
       image={RandzuCoverSVG}
       mobileImage={RandzuCoverMobileSVG}
       defaultPage={'Game'}
@@ -155,4 +155,4 @@ const Connect4: React.FC = () => {
   );
 };
 
-export default Connect4;
+export default CustomGame;
