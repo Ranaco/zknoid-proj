@@ -437,7 +437,6 @@ const GuessWho = () => {
           <Lost startGame={restart} />
         </GameWrap>
       )}
-
       {finalState == GameState.Active && (
         <div className={styles.container}>
           <div className="flex-1 px-4 py-4">

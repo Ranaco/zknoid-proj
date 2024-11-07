@@ -12,7 +12,7 @@ import { CustomGame } from './custom_game';
 const modules = {
   // GuessWhoGame,
   Balances,
-  CustomGame: CustomGame,
+  CustomGame,
   // ArkanoidGameHub,
   // ThimblerigLogic,
   // RandzuLogic,

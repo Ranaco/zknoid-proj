@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React, { useState } from 'react';
 import { useNetworkStore } from '@/lib/stores/network';
 import {
   useCustomGameMatchQueueStore,
@@ -8,9 +8,8 @@ import RandzuCoverSVG from '../randzu/assets/game-cover.png';
 import RandzuCoverMobileSVG from '../randzu/assets/game-cover-mobile.svg';
 import ZkNoidGameContext from '@/lib/contexts/ZkNoidGameContext';
 import { useProtokitChainStore } from '@/lib/stores/protokitChain';
-import { Bool, CircuitString, UInt64 } from 'o1js';
+import { UInt32, UInt64 } from 'o1js';
 import { ClientAppChain } from 'zknoid-chain-dev';
-import { useGuessWhoMatchQueueStore } from '../guess_who/stores/matchQueue';
 import { customGameConfig } from './config';
 import {
   useLobbiesStore,
@@ -24,6 +23,16 @@ import GamePage from '@/components/framework/GamePage';
 import { useToasterStore } from '@/lib/stores/toasterStore';
 import { useRateGameStore } from '@/lib/stores/rateGameStore';
 import { api } from '@/trpc/react';
+import styles from './Game.module.css';
+import { GameWrap } from '@/components/framework/GamePage/GameWrap';
+import { Win } from '@/components/framework/GameWidget/ui/popups/Win';
+import { Lost } from '@/components/framework/GameWidget/ui/popups/Lost';
+import WaitingPopup from './components/popup/waiting';
+
+type Player = 1 | 2 | 'Draw' | null;
+
+const rows = 6;
+const cols = 6;
 
 enum GameState {
   NotStarted,
@@ -106,6 +115,7 @@ const CustomGame: React.FC = () => {
       }
 
       if (matchQueue.lastGameState == 'lost') {
+        console.log('LastGameState', matchQueue.lastGameState);
         setGameState(GameState.Lost);
         setFinalState(GameState.Lost);
       }
@@ -121,15 +131,19 @@ const CustomGame: React.FC = () => {
     state.getSessionKey()
   );
 
-  const makeMove = async () => {
+  const makeMove = async (col: number = 2) => {
+    if (!matchQueue.gameInfo?.parsed.isCurrentUserMove) return;
     console.log('making move', matchQueue.gameInfo);
 
-    const CustomGameGame = client.runtime.resolve('Connect4Game');
+    const CustomGame = client.runtime.resolve('CustomGame');
 
     const tx = await client.transaction(
       sessionPrivateKey.toPublicKey(),
       async () => {
-        CustomGameGame.makeMove(UInt64.from(matchQueue.gameInfo!.gameId), 2);
+        CustomGame.makeMove(
+          UInt64.from(matchQueue.gameInfo!.gameId),
+          UInt32.from(col)
+        );
       }
     );
 
@@ -141,6 +155,39 @@ const CustomGame: React.FC = () => {
     setLoading(false);
   };
 
+  React.useEffect(() => {
+    if (matchQueue.gameInfo) {
+      console.log('BoardEffect', matchQueue.gameInfo?.parsed.board);
+      if (matchQueue.gameInfo.parsed.winner) {
+        if (matchQueue.gameInfo.parsed.winner == networkStore.address) {
+          console.log('WinnerIs', matchQueue.gameInfo.parsed.winner);
+          setGameState(GameState.Won);
+        } else {
+          console.log('LoserIs', matchQueue.gameInfo.parsed.winner);
+          setGameState(GameState.Lost);
+        }
+      }
+
+      console.log('CurrentMove', matchQueue.gameInfo.parsed.currentMoveUser);
+
+      setGameState(
+        matchQueue.gameInfo.parsed.isCurrentUserMove
+          ? GameState.Active
+          : GameState.Waiting
+      );
+    }
+
+    setBoard(matchQueue.gameInfo?.parsed.board);
+  }, [matchQueue.gameInfo]);
+
+  const [board, setBoard] = useState<Player[][]>(
+    Array(rows)
+      .fill(null)
+      .map(() => Array(cols).fill(null))
+  );
+  const [winner, setWinner] = useState<Player>(null);
+  const [hoverCol, setHoverCol] = useState<number | null>(null);
+
   return (
     <GamePage
       gameConfig={customGameConfig}
@@ -148,9 +195,50 @@ const CustomGame: React.FC = () => {
       mobileImage={RandzuCoverMobileSVG}
       defaultPage={'Game'}
     >
-      <button className="bg-blue-500" onClick={() => makeMove()}>
-        Make move
-      </button>
+      {finalState === GameState.Won && (
+        <GameWrap>
+          <Win
+            onBtnClick={restart}
+            title={'You won! Congratulations!'}
+            btnText={'Find new game'}
+          />
+        </GameWrap>
+      )}
+      {finalState === GameState.Lost && (
+        <GameWrap>
+          <Lost startGame={restart} />
+        </GameWrap>
+      )}
+      {finalState == GameState.Active && (
+        <div className={styles.container}>
+          <h1 className={styles.title}>Connect 4 - 6x6 Grid</h1>
+          <div className={styles.board}>
+            {board?.map((row, rowIndex) => (
+              <div key={rowIndex} className={styles.row}>
+                {row.map((cell, colIndex) => (
+                  <div
+                    key={colIndex}
+                    className={`${styles.cell} ${hoverCol === colIndex ? styles.hoverCell : ''}`}
+                    onClick={() => makeMove(colIndex)}
+                    onMouseEnter={() => setHoverCol(colIndex)}
+                    onMouseLeave={() => setHoverCol(null)}
+                  >
+                    <div
+                      className={`${styles.disc} ${cell === 1 ? styles.redDisc : cell === 2 ? styles.yellowDisc : ''}`}
+                    />
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+          {winner === 'Draw' && (
+            <h2 className={styles.winnerMessage + ' ' + styles.title}>
+              It&apos;s a draw!
+            </h2>
+          )}
+          {gameState === GameState.Waiting && <WaitingPopup />}
+        </div>
+      )}
     </GamePage>
   );
 };

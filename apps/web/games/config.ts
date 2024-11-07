@@ -23,6 +23,7 @@ export const zkNoidConfig = createConfig({
     // pokerConfig,
     // arkanoidConfig,
     // numberGuessingConfig,
+    // guessWhoConfig,
     customGameConfig,
   ],
 });

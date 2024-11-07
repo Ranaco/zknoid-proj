@@ -17,10 +17,12 @@ export interface IGameInfo {
   player2: PublicKey;
   currentMoveUser: PublicKey;
   lastMoveBlockHeight: bigint;
+  isCurrentUserMove: boolean;
   board: CustomGameBoard;
   winner: PublicKey;
   gameEnded: bigint;
   gameId: bigint;
+  parsed: any;
 }
 
 export interface MatchQueueState {
@@ -115,9 +117,14 @@ export const matchQueueInitializer = immer<MatchQueueState>((set) => ({
     ) {
       console.log('Setting last game state', this.gameInfo?.gameId);
       const gameInfo = (await query?.games.get(
-        UInt64.from(this.gameInfo?.gameId!)
+        UInt64.from(this.gameInfo.gameId)
       ))!;
-      console.log('Fetched last game info', gameInfo);
+      console.log(
+        'Fetched last game info',
+        gameInfo.board.value.map((row: UInt32[]) =>
+          row.map((col: UInt32) => Number(col.value.toBigInt()))
+        ) ?? 'HEll'
+      );
       console.log('Game winner', gameInfo.winner.toBase58());
 
       set((state) => {
@@ -130,7 +137,6 @@ export const matchQueueInitializer = immer<MatchQueueState>((set) => ({
     if (activeGameId?.greaterThan(UInt64.from(0)).toBoolean()) {
       console.log('from loop', Number(UInt64.from(activeGameId!).toBigInt()));
       const gameInfo = (await query?.games.get(activeGameId))!;
-      console.log('Raw game info', gameInfo);
 
       const currentUserIndex = address
         .equals(gameInfo.player1 as PublicKey)
@@ -154,6 +160,9 @@ export const matchQueueInitializer = immer<MatchQueueState>((set) => ({
           player2: gameInfo.player2.toBase58(),
           currentMoveUser: gameInfo.currentMoveUser.toBase58(),
           lastMoveBlockHeight: lastMoveBlockHeight?.toBigInt(),
+          isCurrentUserMove: (gameInfo.currentMoveUser as PublicKey)
+            .equals(address)
+            .toBoolean(),
           board: gameInfo.board.value.map((row: UInt32[]) =>
             row.map((col: UInt32) => Number(col.value.toBigInt()))
           ),
@@ -178,6 +187,7 @@ export const matchQueueInitializer = immer<MatchQueueState>((set) => ({
             row.map((col: UInt32) => Number(col.value.toBigInt()))
           ),
           gameEnded: gameInfo.gameEnded.value.toBigInt(),
+          parsed: parsedGameInfo,
         };
         console.log('Parsed game info', parsedGameInfo);
       });
@@ -243,6 +253,7 @@ export const useObserveCustomGameMatchQueue = () => {
       client_.query.runtime.CustomGame,
       chain.block?.height
     );
+    console.log("LoadingActive")
     matchQueue.loadActiveGame(
       client_.query.runtime.CustomGame,
       chain.block?.height,
