@@ -6,6 +6,7 @@ import {
   UInt64,
   Provable,
   Bool,
+  Int64,
   UInt32,
   Poseidon,
 } from 'o1js';
@@ -183,7 +184,16 @@ export class CustomGame extends MatchMaker {
 
     const rowIndex = game.board.dropDisc(currentPlayerId, col);
 
-    const hasWon = this.checkWin(game.board, currentPlayerId, rowIndex, col);
+    // Convert rowIndex and col to Int64
+    const rowIndexInt64 = Int64.fromUnsigned(rowIndex);
+    const colInt64 = Int64.fromUnsigned(col);
+
+    const hasWon = this.checkWin(
+      game.board,
+      currentPlayerId,
+      rowIndexInt64,
+      colInt64,
+    );
     const isDraw = game.board.isFull().and(hasWon.not());
 
     game.winner = Provable.if(
@@ -206,15 +216,14 @@ export class CustomGame extends MatchMaker {
     );
 
     game.lastMoveBlockHeight = this.network.block.height;
-    // Retrieve the updated game state
     const gameEnded = game.gameEnded.equals(UInt32.one);
 
     await this.activeGameId.set(
-      Provable.if(hasWon, game.player2, PublicKey.empty()),
+      Provable.if(gameEnded, game.player1, PublicKey.empty()),
       UInt64.zero,
     );
     await this.activeGameId.set(
-      Provable.if(hasWon, game.player2, PublicKey.empty()),
+      Provable.if(gameEnded, game.player2, PublicKey.empty()),
       UInt64.zero,
     );
 
@@ -243,6 +252,9 @@ export class CustomGame extends MatchMaker {
 
       // Call any additional game end logic
       await this._onLobbyEnd(gameId, hasWon);
+    } else {
+      // Update the game state
+      await this.games.set(gameId, game);
     }
   }
 
@@ -255,135 +267,90 @@ export class CustomGame extends MatchMaker {
    */
   checkDirection(
     board: CustomGameBoard,
-    row: UInt32,
-    col: UInt32,
+    row: Int64,
+    col: Int64,
     playerId: UInt32,
-    rowDir: number,
-    colDir: number,
+    rowDir: Int64,
+    colDir: Int64,
   ): Bool {
     let count = UInt32.one; // Start with 1 for the current position
 
     // First loop: i from 1 to 3 (positive direction)
     let canContinue = Bool(true);
-    for (let i = 1; i < 4; i++) {
-      const deltaRow = rowDir * i; // number
-      const deltaCol = colDir * i; // number
+    Provable.asProver(() => {
+      for (let i = 1; i < 4; i++) {
+        const deltaRow = rowDir.mul(i);
+        const deltaCol = colDir.mul(i);
 
-      let newRow = row;
-      let newCol = col;
+        const newRow = row.add(Int64.from(deltaRow));
+        const newCol = col.add(Int64.from(deltaCol));
 
-      // Handle newRow
-      if (deltaRow !== 0) {
-        if (deltaRow > 0) {
-          newRow = newRow.add(UInt32.from(deltaRow));
-        } else {
-          const absDeltaRow = -deltaRow;
-          const canSubtract = row.greaterThanOrEqual(UInt32.from(absDeltaRow));
-          newRow = Provable.if(
-            canSubtract,
-            row.sub(UInt32.from(absDeltaRow)),
-            UInt32.zero,
-          );
-          canContinue = canContinue.and(canSubtract);
-        }
+        // Check bounds
+        const rowInBounds = Provable.if(
+          newRow.sub(Int64.from(GAME_ROWS)).isPositiveV2(),
+          Bool(false),
+          Bool(true),
+        ).and(
+          Provable.if(newRow.isPositiveV2().not(), Bool(false), Bool(true)),
+        );
+
+        const colInBounds = Provable.if(
+          newCol.sub(Int64.from(GAME_COLS)).isPositiveV2(),
+          Bool(false),
+          Bool(true),
+        ).and(
+          Provable.if(newCol.isPositiveV2().not(), Bool(false), Bool(true)),
+        );
+
+        canContinue = canContinue.and(rowInBounds).and(colInBounds);
+
+        // Get cell value and check if it matches the player
+        const cellValue = this.getCellValue(board, newRow, newCol);
+        const cellMatches = cellValue.equals(playerId);
+        canContinue = canContinue.and(cellMatches);
+
+        // Update count
+        const increment = Provable.if(canContinue, UInt32.one, UInt32.zero);
+        count = count.add(increment);
       }
-
-      // Handle newCol
-      if (deltaCol !== 0) {
-        if (deltaCol > 0) {
-          newCol = newCol.add(UInt32.from(deltaCol));
-        } else {
-          const absDeltaCol = -deltaCol;
-          const canSubtract = col.greaterThanOrEqual(UInt32.from(absDeltaCol));
-          newCol = Provable.if(
-            canSubtract,
-            col.sub(UInt32.from(absDeltaCol)),
-            UInt32.zero,
-          );
-          canContinue = canContinue.and(canSubtract);
-        }
-      }
-
-      // Check bounds
-      const rowInBounds = newRow.lessThan(UInt32.from(GAME_ROWS));
-      const colInBounds = newCol.lessThan(UInt32.from(GAME_COLS));
-      canContinue = canContinue.and(rowInBounds).and(colInBounds);
-
-      // Get cell value and check if it matches the player
-      const cellValue = this.getCellValue(board, newRow, newCol);
-      const cellMatches = cellValue.equals(playerId);
-      canContinue = canContinue.and(cellMatches);
-
-      // Update count
-      const increment = Provable.if(canContinue, UInt32.one, UInt32.zero);
-      count = count.add(increment);
-
-      // Since we cannot break the loop, `canContinue` ensures we stop counting
-    }
+    });
 
     // Second loop: i from 1 to 3 (negative direction)
     canContinue = Bool(true);
-    for (let i = 1; i < 4; i++) {
-      const deltaRow = -rowDir * i; // number
-      const deltaCol = -colDir * i; // number
+    Provable.asProver(() => {
+      for (let i = 1; i < 4; i++) {
+        const deltaRow = -rowDir * i;
+        const deltaCol = -colDir * i;
 
-      let newRow = row;
-      let newCol = col;
+        const newRow = row.add(Int64.from(deltaRow));
+        const newCol = col.add(Int64.from(deltaCol));
 
-      // Handle newRow
-      if (deltaRow !== 0) {
-        if (deltaRow > 0) {
-          newRow = newRow.add(UInt32.from(deltaRow));
-        } else {
-          const absDeltaRow = -deltaRow;
-          const canSubtract = row.greaterThanOrEqual(UInt32.from(absDeltaRow));
-          newRow = Provable.if(
-            canSubtract,
-            row.sub(UInt32.from(absDeltaRow)),
-            UInt32.zero,
-          );
-          canContinue = canContinue.and(canSubtract);
-        }
+        // Check bounds
+        const rowInBounds =
+          newRow >= Int64.zero && newRow < Int64.from(GAME_ROWS);
+        const colInBounds =
+          newCol >= Int64.zero && newCol < Int64.from(GAME_COLS);
+        canContinue = canContinue.and(rowInBounds).and(colInBounds);
+
+        // Get cell value and check if it matches the player
+        const cellValue = this.getCellValue(board, newRow, newCol);
+        const cellMatches = cellValue.equals(playerId);
+        canContinue = canContinue.and(cellMatches);
+
+        // Update count
+        const increment = Provable.if(canContinue, UInt32.one, UInt32.zero);
+        count = count.add(increment);
       }
-
-      // Handle newCol
-      if (deltaCol !== 0) {
-        if (deltaCol > 0) {
-          newCol = newCol.add(UInt32.from(deltaCol));
-        } else {
-          const absDeltaCol = -deltaCol;
-          const canSubtract = col.greaterThanOrEqual(UInt32.from(absDeltaCol));
-          newCol = Provable.if(
-            canSubtract,
-            col.sub(UInt32.from(absDeltaCol)),
-            UInt32.zero,
-          );
-          canContinue = canContinue.and(canSubtract);
-        }
-      }
-
-      // Check bounds
-      const rowInBounds = newRow.lessThan(UInt32.from(GAME_ROWS));
-      const colInBounds = newCol.lessThan(UInt32.from(GAME_COLS));
-      canContinue = canContinue.and(rowInBounds).and(colInBounds);
-
-      // Get cell value and check if it matches the player
-      const cellValue = this.getCellValue(board, newRow, newCol);
-      const cellMatches = cellValue.equals(playerId);
-      canContinue = canContinue.and(cellMatches);
-
-      // Update count
-      const increment = Provable.if(canContinue, UInt32.one, UInt32.zero);
-      count = count.add(increment);
-    }
+    });
 
     return count.greaterThanOrEqual(UInt32.from(CELLS_TO_WIN));
   }
+
   checkWin(
     board: CustomGameBoard,
     currentPlayerId: UInt32,
-    lastRow: UInt32,
-    lastCol: UInt32,
+    lastRow: Int64,
+    lastCol: Int64,
   ): Bool {
     let hasWon = Bool(false);
 
@@ -391,30 +358,25 @@ export class CustomGame extends MatchMaker {
       { rowDir: 0, colDir: 1 }, // horizontal
       { rowDir: 1, colDir: 0 }, // vertical
       { rowDir: 1, colDir: 1 }, // diagonal right-down
-      { rowDir: 1, colDir: -1 }, // diagonal left-down
+      { rowDir: -1, colDir: 1 }, // diagonal left-up
     ];
 
-    let hasWinInDirection = Bool(false);
-
-    for (var i = 0; i < 4; i++) {
+    for (let i = 0; i < directions.length; i++) {
       const dir = directions[i];
-      hasWinInDirection = hasWinInDirection.or(
-        this.checkDirection(
-          board,
-          lastRow,
-          lastCol,
-          currentPlayerId,
-          dir.rowDir,
-          dir.colDir,
-        ),
+      const hasWinInDirection = this.checkDirection(
+        board,
+        lastRow,
+        lastCol,
+        currentPlayerId,
+        Int64.from(dir.rowDir),
+        Int64.from(dir.colDir),
       );
+
+      hasWon = hasWon.or(hasWinInDirection);
     }
 
-    // Check if count >= 4
-    hasWon = hasWon.or(hasWinInDirection);
     return hasWon;
   }
-
   safeSub(a: UInt32, b: UInt32): UInt32 {
     const underflow = a.lessThan(b);
     return Provable.if(underflow, UInt32.zero, a.sub(b));
@@ -423,13 +385,11 @@ export class CustomGame extends MatchMaker {
   /**
    * Retrieves the value of the cell at the given position.
    */
-  getCellValue(board: CustomGameBoard, row: UInt32, col: UInt32): UInt32 {
+  getCellValue(board: CustomGameBoard, row: Int64, col: Int64): UInt32 {
     let cellValue = UInt32.zero;
     for (let r = 0; r < GAME_ROWS; r++) {
       for (let c = 0; c < GAME_COLS; c++) {
-        const match = row
-          .equals(UInt32.from(r))
-          .and(UInt32.from(col).equals(UInt32.from(c)));
+        const match = row.equals(Int64.from(r)).and(col.equals(Int64.from(c)));
         cellValue = Provable.if(match, board.value[r][c], cellValue);
       }
     }
