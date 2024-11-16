@@ -6,7 +6,7 @@ import ZkNoidGameContext from '@/lib/contexts/ZkNoidGameContext';
 import { ClientAppChain } from 'zknoid-chain-dev';
 import { useNetworkStore } from '@/lib/stores/network';
 import LobbyPage from '@/components/framework/Lobby/LobbyPage';
-import { customGameConfig } from '../config';
+import { connect4Config } from '../config';
 
 export default function Connect4Lobby({
   params,
@@ -22,7 +22,7 @@ export default function Connect4Lobby({
   }
 
   const client_ = client as ClientAppChain<
-    typeof customGameConfig.runtimeModules,
+    typeof connect4Config.runtimeModules,
     any,
     any,
     any
@@ -30,7 +30,7 @@ export default function Connect4Lobby({
 
   return (
     <GamePage
-      gameConfig={customGameConfig}
+      gameConfig={connect4Config}
       image={RandzuCoverSVG}
       mobileImage={RandzuCoverMobileSVG}
       defaultPage={'Lobby list'}
@@ -39,11 +39,11 @@ export default function Connect4Lobby({
         lobbyId={params.lobbyId}
         query={
           networkStore.protokitClientStarted
-            ? client_.query.runtime.CustomGame
+            ? client_.query.runtime.Connect4
             : undefined
         }
-        contractName={'CustomGame'}
-        config={customGameConfig}
+        contractName={'Connect4'}
+        config={connect4Config}
       />
     </GamePage>
   );

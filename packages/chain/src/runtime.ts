@@ -7,12 +7,12 @@ import { ModulesConfig } from '@proto-kit/common';
 import { CheckersLogic } from './checkers';
 import { GuessGame } from './number_guessing';
 import { GuessWhoGame } from './guess_who';
-import { CustomGame } from './custom_game';
+import { Connect4 } from './connect_4';
 
 const modules = {
   // GuessWhoGame,
   Balances,
-  CustomGame,
+  Connect4,
   // ArkanoidGameHub,
   // ThimblerigLogic,
   // RandzuLogic,
@@ -25,7 +25,7 @@ const config: ModulesConfig<typeof modules> = {
   Balances: {
     totalSupply: UInt64.from(10000),
   },
-  CustomGame: {},
+  Connect4: {},
   // ArkanoidGameHub: {},
   // ThimblerigLogic: {},
   // RandzuLogic: {},

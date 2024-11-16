@@ -1,15 +1,15 @@
 import { createZkNoidGameConfig } from '@/lib/createConfig';
 import { ZkNoidGameType } from '@/lib/platform/game_types';
 import { ZkNoidGameFeature, ZkNoidGameGenre } from '@/lib/platform/game_tags';
-import { CustomGame } from 'zknoid-chain-dev';
+import { Connect4 } from 'zknoid-chain-dev';
 import { LogoMode } from '@/app/constants/games';
-import CustomGameHome from './CustomGame';
-import CustomGameLobby from './components/CustomGameLobby';
+import Connect4Game from './Connect4';
+import Connect4Lobby from './components/Connect4Lobby';
 
-export const customGameConfig = createZkNoidGameConfig({
-  id: 'custom_game',
+export const connect4Config = createZkNoidGameConfig({
+  id: 'connect_4',
   type: ZkNoidGameType.PVP,
-  name: 'CustomGame',
+  name: 'Connect4',
   description:
     'Guess who is a game where a player hides a character and gives the PC to another player. Other player tries to guess the character',
   image: '/image/games/soon.svg',
@@ -23,8 +23,8 @@ export const customGameConfig = createZkNoidGameConfig({
   rules:
     'Guess who is a game where a player hides a character and gives the PC to another player. Other player tries to guess the character',
   runtimeModules: {
-    CustomGame,
+    Connect4,
   },
-  page: CustomGameHome,
-  lobby: CustomGameLobby,
+  page: Connect4Game,
+  lobby: Connect4Lobby,
 });

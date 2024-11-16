@@ -18,14 +18,14 @@ const GAME_ROWS = 6;
 const GAME_COLS = 6;
 const CELLS_TO_WIN = 4;
 
-export class CustomGameBoard extends Struct({
+export class Connect4Board extends Struct({
   value: Provable.Array(Provable.Array(UInt32, GAME_COLS), GAME_ROWS),
 }) {
-  static empty(): CustomGameBoard {
+  static empty(): Connect4Board {
     const emptyGrid = Array.from({ length: GAME_ROWS }, () =>
       Array(GAME_COLS).fill(UInt32.zero),
     );
-    return new CustomGameBoard({ value: emptyGrid });
+    return new Connect4Board({ value: emptyGrid });
   }
 
   /**
@@ -117,13 +117,13 @@ export class GameInfo extends Struct({
   player2: PublicKey,
   currentMoveUser: PublicKey,
   lastMoveBlockHeight: UInt64,
-  board: CustomGameBoard,
+  board: Connect4Board,
   winner: PublicKey,
   gameEnded: UInt32,
 }) {}
 
 @runtimeModule()
-export class CustomGame extends MatchMaker {
+export class Connect4 extends MatchMaker {
   @state() public games = StateMap.from<UInt64, GameInfo>(UInt64, GameInfo);
 
   public override async initGame(
@@ -139,7 +139,7 @@ export class CustomGame extends MatchMaker {
         player2: lobby.players[1],
         currentMoveUser: lobby.players[0],
         lastMoveBlockHeight: this.network.block.height,
-        board: CustomGameBoard.empty(),
+        board: Connect4Board.empty(),
         winner: PublicKey.empty(),
         gameEnded: UInt32.zero,
       }),
@@ -266,7 +266,7 @@ export class CustomGame extends MatchMaker {
    * @param lastCol The column index where the disc was placed.
    */
   checkDirection(
-    board: CustomGameBoard,
+    board: Connect4Board,
     row: Int64,
     col: Int64,
     playerId: UInt32,
@@ -347,7 +347,7 @@ export class CustomGame extends MatchMaker {
   }
 
   checkWin(
-    board: CustomGameBoard,
+    board: Connect4Board,
     currentPlayerId: UInt32,
     lastRow: Int64,
     lastCol: Int64,
@@ -385,7 +385,7 @@ export class CustomGame extends MatchMaker {
   /**
    * Retrieves the value of the cell at the given position.
    */
-  getCellValue(board: CustomGameBoard, row: Int64, col: Int64): UInt32 {
+  getCellValue(board: Connect4Board, row: Int64, col: Int64): UInt32 {
     let cellValue = UInt32.zero;
     for (let r = 0; r < GAME_ROWS; r++) {
       for (let c = 0; c < GAME_COLS; c++) {

@@ -3,12 +3,12 @@ import { useContext, useEffect } from 'react';
 import { useProtokitChainStore } from '@/lib/stores/protokitChain';
 import { useNetworkStore } from '@/lib/stores/network';
 import ZkNoidGameContext from '@/lib/contexts/ZkNoidGameContext';
-import { customGameConfig } from '../config';
+import { connect4Config } from '../config';
 import { type ClientAppChain } from '@proto-kit/sdk';
 import { create } from 'zustand';
 
 import { immer } from 'zustand/middleware/immer';
-import { CustomGameBoard, RoundIdxUser } from 'zknoid-chain-dev';
+import { Connect4Board, RoundIdxUser } from 'zknoid-chain-dev';
 import { MatchMaker, PENDING_BLOCKS_NUM_CONST } from 'zknoid-chain-dev';
 import { type ModuleQuery } from '@proto-kit/sequencer';
 
@@ -18,7 +18,7 @@ export interface IGameInfo {
   currentMoveUser: PublicKey;
   lastMoveBlockHeight: bigint;
   isCurrentUserMove: boolean;
-  board: CustomGameBoard;
+  board: Connect4Board;
   winner: PublicKey;
   gameEnded: bigint;
   gameId: bigint;
@@ -209,19 +209,19 @@ export const matchQueueInitializer = immer<MatchQueueState>((set) => ({
   },
 }));
 
-export const useCustomGameMatchQueueStore = create<
+export const useConnect4MatchQueueStore = create<
   MatchQueueState,
   [['zustand/immer', never]]
 >(matchQueueInitializer);
 
-export const useObserveCustomGameMatchQueue = () => {
+export const useObserveConnect4MatchQueue = () => {
   const chain = useProtokitChainStore();
   const network = useNetworkStore();
-  const matchQueue = useCustomGameMatchQueueStore();
+  const matchQueue = useConnect4MatchQueueStore();
   const { client } = useContext(ZkNoidGameContext);
 
   const client_ = client as ClientAppChain<
-    typeof customGameConfig.runtimeModules,
+    typeof connect4Config.runtimeModules,
     any,
     any,
     any
@@ -250,12 +250,12 @@ export const useObserveCustomGameMatchQueue = () => {
     );
 
     matchQueue.loadMatchQueue(
-      client_.query.runtime.CustomGame,
+      client_.query.runtime.Connect4,
       chain.block?.height
     );
-    console.log("LoadingActive")
+    console.log('LoadingActive');
     matchQueue.loadActiveGame(
-      client_.query.runtime.CustomGame,
+      client_.query.runtime.Connect4,
       chain.block?.height,
       PublicKey.fromBase58(network.address!)
     );
