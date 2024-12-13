@@ -1,5 +1,4 @@
 import GamePage from '@/components/framework/GamePage';
-import RandzuCoverSVG from '@/games/randzu/assets/game-cover.svg';
 import RandzuCoverMobileSVG from '@/games/randzu/assets/game-cover-mobile.svg';
 import { useContext } from 'react';
 import ZkNoidGameContext from '@/lib/contexts/ZkNoidGameContext';
@@ -7,6 +6,7 @@ import { ClientAppChain } from 'zknoid-chain-dev';
 import { useNetworkStore } from '@/lib/stores/network';
 import LobbyPage from '@/components/framework/Lobby/LobbyPage';
 import { connect4Config } from '../config';
+import Connect4Cover from '../assets/Connect4Cover.png';
 
 export default function Connect4Lobby({
   params,
@@ -31,7 +31,7 @@ export default function Connect4Lobby({
   return (
     <GamePage
       gameConfig={connect4Config}
-      image={RandzuCoverSVG}
+      image={Connect4Cover}
       mobileImage={RandzuCoverMobileSVG}
       defaultPage={'Lobby list'}
     >

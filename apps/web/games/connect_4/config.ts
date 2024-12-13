@@ -12,7 +12,7 @@ export const connect4Config = createZkNoidGameConfig({
   name: 'Connect4',
   description:
     'Guess who is a game where a player hides a character and gives the PC to another player. Other player tries to guess the character',
-  image: '/image/games/soon.svg',
+  image: '/image/games/connect4.png',
   logoMode: LogoMode.CENTER,
   genre: ZkNoidGameGenre.BoardGames,
   features: [ZkNoidGameFeature.Multiplayer],

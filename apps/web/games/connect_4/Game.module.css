@@ -1,37 +1,65 @@
 .container {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  flex-direction: row;
+  align-items: start;
+  justify-content: space-between;
   min-height: 100vh;
-  background-color: #d2ff00;
-  padding: 20px;
+  padding: 40px;
+  gap: 25px;
 }
 
 .board {
   display: flex;
   flex-direction: column;
   margin-bottom: 20px;
+  border: 1px solid #f1f1f1;
+  width: 100%;
+  aspect-ratio: 1/1;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  gap: 10px;
+}
+
+.sidebar {
+  width: 33%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  justify-content: start;
+  gap: 20px;
 }
 
 .row {
   display: flex;
+  gap: 10px;
 }
 
 .title {
-  color: #000000;
+  color: #f1f1f1;
+  font-size: 24px;
+}
+
+.game_footer {
+  display: flex;
+  flex-direction: row;
+  gap: 30px;
+  justify-content: start;
+  width: 100%;
 }
 
 .cell {
-  width: 60px;
-  height: 60px;
-  margin: 2px;
+  width: 180px;
+  height: 180px;
+  margin: 6px;
   border-radius: 50%;
   background-color: #1f1f1f;
   position: relative;
   overflow: hidden;
   transition: background-color 0.3s ease;
   cursor: pointer;
+  border: 1px solid #f1f1f1;
 }
 
 .cell:hover {
@@ -49,11 +77,13 @@
 }
 
 .redDisc {
-  background-color: red;
+  background: url('./assets/red.png');
+  background-size: cover;
 }
 
 .yellowDisc {
-  background-color: yellow;
+  background: url('./assets/yellow.png');
+  background-size: cover;
 }
 
 .resetButton {

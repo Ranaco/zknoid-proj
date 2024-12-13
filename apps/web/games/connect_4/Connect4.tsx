@@ -4,8 +4,6 @@ import {
   useConnect4MatchQueueStore,
   useObserveConnect4MatchQueue,
 } from './stores/matchQueue';
-import RandzuCoverSVG from '../randzu/assets/game-cover.png';
-import RandzuCoverMobileSVG from '../randzu/assets/game-cover-mobile.svg';
 import ZkNoidGameContext from '@/lib/contexts/ZkNoidGameContext';
 import { useProtokitChainStore } from '@/lib/stores/protokitChain';
 import { UInt32, UInt64 } from 'o1js';
@@ -28,6 +26,7 @@ import { GameWrap } from '@/components/framework/GamePage/GameWrap';
 import { Win } from '@/components/framework/GameWidget/ui/popups/Win';
 import { Lost } from '@/components/framework/GameWidget/ui/popups/Lost';
 import WaitingPopup from './components/popup/waiting';
+import Connect4Cover from './assets/Connect4Cover.png';
 
 type Player = 1 | 2 | 'Draw' | null;
 
@@ -184,8 +183,8 @@ const Connect4Game: React.FC = () => {
   return (
     <GamePage
       gameConfig={connect4Config}
-      image={RandzuCoverSVG}
-      mobileImage={RandzuCoverMobileSVG}
+      image={Connect4Cover}
+      mobileImage={Connect4Cover}
       defaultPage={'Game'}
     >
       {finalState === GameState.Won && (
@@ -204,32 +203,73 @@ const Connect4Game: React.FC = () => {
       )}
       {finalState == GameState.Active && (
         <div className={styles.container}>
-          <h1 className={styles.title}>Connect 4 - 6x6 Grid</h1>
-          <div className={styles.board}>
-            {board?.map((row, rowIndex) => (
-              <div key={rowIndex} className={styles.row}>
-                {row.map((cell, colIndex) => (
-                  <div
-                    key={colIndex}
-                    className={`${styles.cell} ${hoverCol === colIndex ? styles.hoverCell : ''}`}
-                    onClick={() => makeMove(colIndex)}
-                    onMouseEnter={() => setHoverCol(colIndex)}
-                    onMouseLeave={() => setHoverCol(null)}
-                  >
-                    <div
-                      className={`${styles.disc} ${cell === 1 ? styles.redDisc : cell === 2 ? styles.yellowDisc : ''}`}
-                    />
-                  </div>
-                ))}
-              </div>
-            ))}
+          <div className={styles.sidebar}>
+            <span className={'text-2xl font-bold uppercase text-[#D4F829]'}>
+              GAME STATUS: {GameState[gameState]}
+            </span>
+            <span className={'mt-2 flex flex-row items-center text-2xl'}>
+              <span className="uppercase text-[#D4F829]">
+                Your opponent:&nbsp;
+              </span>
+              <span className="inline-block max-w-[350px] overflow-hidden text-ellipsis py-2">
+                <span>
+                  {networkStore.address ===
+                  matchQueue.gameInfo?.parsed.currentMoveUser
+                    ? `${networkStore.address}`
+                    : `${networkStore.address}`}
+                </span>
+              </span>
+            </span>
           </div>
-          {winner === 'Draw' && (
-            <h2 className={styles.winnerMessage + ' ' + styles.title}>
-              It&apos;s a draw!
-            </h2>
-          )}
+          <div className="flex h-full flex-1 flex-col items-center justify-center">
+            <div className={styles.board}>
+              {board?.map((row, rowIndex) => (
+                <div key={rowIndex} className={styles.row}>
+                  {row.map((cell, colIndex) => (
+                    <div
+                      key={colIndex}
+                      className={`${styles.cell} ${hoverCol === colIndex ? styles.hoverCell : ''}`}
+                      onClick={() => makeMove(colIndex)}
+                      onMouseEnter={() => setHoverCol(colIndex)}
+                      onMouseLeave={() => setHoverCol(null)}
+                    >
+                      <div
+                        className={`${styles.disc} ${cell === 1 ? styles.redDisc : cell === 2 ? styles.yellowDisc : ''}`}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+            <div className={styles.game_footer}>
+              <h1 className={styles.title}>Connect 4 - 6x6 Grid</h1>
+              <h1 className={styles.title}>
+                <span className="uppercase text-[#D4F829]">Author:&nbsp;</span>
+                <span className="font-bold">CodeDecoders</span>
+              </h1>
+            </div>
+          </div>
           {gameState === GameState.Waiting && <WaitingPopup />}
+          <div className={styles.sidebar}>
+            <span className={'text-4xl text-[#D4F829]'}>Competition</span>
+            <div>
+              <span className={'text-2xl text-[#D4F829]'}>
+                LOBBY NAME:&nbsp;
+                <span className="text-white">
+                  {lobbiesStore.activeLobby?.name}
+                </span>
+              </span>
+            </div>
+
+            <div>
+              <span className={'text-2xl text-[#D4F829]'}>
+                FUNDS:&nbsp;
+                <span className="text-white">
+                  {lobbiesStore.activeLobby?.reward}
+                </span>
+              </span>
+            </div>
+          </div>
         </div>
       )}
     </GamePage>
