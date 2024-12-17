@@ -58,8 +58,10 @@ const Connect4Game: React.FC = () => {
     GameState.Active
   );
   const [loading, setLoading] = React.useState(false);
+  const [rating, setRating] = React.useState<number | null>(0);
 
   const startGame = useStartGame(competition.id, setGameState);
+  const rateGameStore = useRateGameStore();
 
   const { client } = React.useContext(ZkNoidGameContext);
 
@@ -84,13 +86,13 @@ const Connect4Game: React.FC = () => {
   useObserveLobbiesStore(query);
   const lobbiesStore = useLobbiesStore();
 
+  const getRatingQuery = api.ratings.getGameRating.useQuery({
+    gameId: 'connect-4',
+  });
+
   console.log('Active lobby', lobbiesStore.activeLobby);
 
   React.useEffect(() => {
-    // if (matchQueue.gameInfo?.parsed.currentCycle) {
-    //     setGameState(GameState.Waiting)
-    // }
-
     console.log('Match Queue: ', matchQueue);
 
     if (matchQueue.inQueue && !matchQueue.activeGameId) {
@@ -123,7 +125,7 @@ const Connect4Game: React.FC = () => {
     state.getSessionKey()
   );
 
-  const makeMove = async (col: number = 2) => {
+  const makeMove = async (col = 2) => {
     if (!matchQueue.gameInfo?.parsed.isCurrentUserMove) return;
     console.log('making move', matchQueue.gameInfo);
 
@@ -140,6 +142,29 @@ const Connect4Game: React.FC = () => {
     );
 
     setLoading(true);
+
+    // Simulate the disc falling animation
+    const rowToUpdate = board.findIndex((row) => row[col] === null);
+    if (rowToUpdate !== -1) {
+      setBoard((prevBoard) => {
+        const newBoard = [...prevBoard];
+        newBoard[rowToUpdate][col] = matchQueue.gameInfo?.parsed
+          .isCurrentUserMove
+          ? 1
+          : 2; // Assign player ID
+        return newBoard;
+      });
+
+      // Trigger the falling animation
+      setTimeout(() => {
+        const discElement = document.querySelector(
+          `.row:nth-child(${rows - rowToUpdate}) .cell:nth-child(${col + 1}) .disc`
+        );
+        if (discElement) {
+          discElement.classList.add('falling');
+        }
+      }, 0);
+    }
 
     tx.transaction = tx.transaction?.sign(sessionPrivateKey);
     await tx.send();
@@ -204,14 +229,14 @@ const Connect4Game: React.FC = () => {
       {finalState == GameState.Active && (
         <div className={styles.container}>
           <div className={styles.sidebar}>
-            <span className={'text-2xl font-bold uppercase text-[#D4F829]'}>
+            <span className={'text-lg font-bold uppercase text-[#D4F829]'}>
               GAME STATUS: {GameState[gameState]}
             </span>
-            <span className={'mt-2 flex flex-row items-center text-2xl'}>
-              <span className="uppercase text-[#D4F829]">
+            <span className={'mt-2 flex flex-row items-center text-lg'}>
+              <span className="whitespace-nowrap uppercase text-[#D4F829]">
                 Your opponent:&nbsp;
               </span>
-              <span className="inline-block max-w-[350px] overflow-hidden text-ellipsis py-2">
+              <span className="inline-block max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap py-2">
                 <span>
                   {networkStore.address ===
                   matchQueue.gameInfo?.parsed.currentMoveUser
@@ -241,19 +266,31 @@ const Connect4Game: React.FC = () => {
                 </div>
               ))}
             </div>
-            <div className={styles.game_footer}>
-              <h1 className={styles.title}>Connect 4 - 6x6 Grid</h1>
-              <h1 className={styles.title}>
-                <span className="uppercase text-[#D4F829]">Author:&nbsp;</span>
-                <span className="font-bold">CodeDecoders</span>
-              </h1>
+            <div className={`${styles.game_footer} text-md w-full`}>
+              <h4 className={''}>
+                <span className="uppercase text-[#D4F829]">Game Rating</span>{' '}
+                &nbsp;⭐&nbsp;
+                {getRatingQuery.data?.rating}
+              </h4>
+              <h4 className={''}>
+                <span className="text-md uppercase text-[#D4F829]">
+                  Author:&nbsp;
+                </span>
+                <span className="text-md font-bold">CodeDecoders</span>
+              </h4>
+              <span className="text-md ml-auto">
+                <span className="uppercase text-[#D4F829]">
+                  Player in Queue:&nbsp;
+                </span>
+                {matchQueue.getQueueLength()}
+              </span>
             </div>
           </div>
           {gameState === GameState.Waiting && <WaitingPopup />}
           <div className={styles.sidebar}>
-            <span className={'text-4xl text-[#D4F829]'}>Competition</span>
+            <span className={'text-xl text-[#D4F829]'}>Competition</span>
             <div>
-              <span className={'text-2xl text-[#D4F829]'}>
+              <span className={'text-lg text-[#D4F829]'}>
                 LOBBY NAME:&nbsp;
                 <span className="text-white">
                   {lobbiesStore.activeLobby?.name}
@@ -262,12 +299,30 @@ const Connect4Game: React.FC = () => {
             </div>
 
             <div>
-              <span className={'text-2xl text-[#D4F829]'}>
+              <span className={'text-lg text-[#D4F829]'}>
                 FUNDS:&nbsp;
                 <span className="text-white">
                   {lobbiesStore.activeLobby?.reward}
                 </span>
               </span>
+            </div>
+            <div className={'mt-2 flex flex-col gap-2'}>
+              <span className={'text-lg uppercase text-[#D4F829]'}>
+                Connect4 Info
+              </span>
+              <p>
+                The Connect 4 game is a classic strategy game in which 2 players
+                go head-to-head in a battle to own the grid! Players choose Frog
+                or Snake discs.
+                <br />
+                They drop the discs into the grid, starting in the middle or at
+                the edge to stack their colored discs upwards, horizontally, or
+                diagonally. Use strategy to block opponents while aiming to be
+                the first player to get 4 in a row to win. The Connect 4 game is
+                a great choice for a play date, a rainy day activity, e your
+                kids want a fun game to play with a friend. It's fun to go 4 the
+                win!
+              </p>
             </div>
           </div>
         </div>

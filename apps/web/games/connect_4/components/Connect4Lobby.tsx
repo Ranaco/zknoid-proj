@@ -32,7 +32,7 @@ export default function Connect4Lobby({
     <GamePage
       gameConfig={connect4Config}
       image={Connect4Cover}
-      mobileImage={RandzuCoverMobileSVG}
+      mobileImage={Connect4Cover}
       defaultPage={'Lobby list'}
     >
       <LobbyPage

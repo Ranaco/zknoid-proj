@@ -6,14 +6,16 @@
   min-height: 100vh;
   padding: 40px;
   gap: 25px;
+  background: #212121;
+  border-radius: 12px;
 }
 
 .board {
   display: flex;
   flex-direction: column;
-  margin-bottom: 20px;
   border: 1px solid #f1f1f1;
   width: 100%;
+  background: #141414;
   aspect-ratio: 1/1;
   justify-content: center;
   align-items: center;
@@ -38,7 +40,6 @@
 
 .title {
   color: #f1f1f1;
-  font-size: 24px;
 }
 
 .game_footer {
@@ -47,17 +48,18 @@
   gap: 30px;
   justify-content: start;
   width: 100%;
+  margin-top: 5px;
 }
 
 .cell {
-  width: 180px;
-  height: 180px;
+  width: 100px;
+  height: 100px;
   margin: 6px;
   border-radius: 50%;
   background-color: #1f1f1f;
   position: relative;
   overflow: hidden;
-  transition: background-color 0.3s ease;
+  transition: background 0.3s ease;
   cursor: pointer;
   border: 1px solid #f1f1f1;
 }

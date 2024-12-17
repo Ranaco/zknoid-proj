@@ -269,7 +269,7 @@ export default function GamePage<RuntimeModules extends RuntimeModulesRecord>({
             />
             <div
               className={
-                'relative flex w-full flex-col gap-20 rounded-b-[10px] border-x border-b border-left-accent p-4 lg:rounded-2xl lg:border-2 lg:p-10 '
+                'relative flex w-full flex-col gap-20 rounded-b-[10px] border-x border-b border-left-accent lg:rounded-2xl lg:border-2'
               }
             >
               <div
